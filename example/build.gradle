@@ -1,0 +1,88 @@
+plugins {
+    id 'fabric-loom' version '1.0-SNAPSHOT'
+    id 'maven-publish'
+    id "com.github.johnrengelman.shadow" version "7.1.0"
+}
+
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
+
+archivesBaseName = project.archives_base_name
+version = project.mod_version
+group = project.maven_group
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url = "https://maven.fabricmc.net/" }
+    maven { url = 'https://maven.maxhenkel.de/repository/public' }
+    repositories {
+        maven {
+            name = "Modrinth"
+            url = "https://api.modrinth.com/maven"
+            content {
+                includeGroup "maven.modrinth"
+            }
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+
+    implementation project(":api")
+    implementation project(":signalling")
+    shadow(project(":signalling")) {
+        transitive(false)
+    }
+
+    implementation 'org.java-websocket:Java-WebSocket:1.5.3'
+    shadow('org.java-websocket:Java-WebSocket:1.5.3'){
+        transitive(false)
+    }
+
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version,
+               "voicertc_dep": project.voicertc_dep,
+               "loader_version": project.loader_version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 17
+}
+
+java {
+    withSourcesJar()
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${archivesBaseName}" }
+    }
+}
+
+shadowJar {
+    configurations = [project.configurations.shadow]
+    classifier 'shadow-dev'
+    relocate 'org.java_websocket',  "xyz.breadloaf.voicertc.example.external.org.java_websocket"
+    relocate "xyz.breadloaf.voicertc.signalling", "xyz.breadloaf.voicertc.example.external.xyz.breadloaf.voicertc.signalling"
+}
+configurations.each { println it.name }
+
+prepareRemapJar {
+    dependsOn shadowJar
+}
+
+remapJar {
+    input = shadowJar.archiveFile.get()
+}

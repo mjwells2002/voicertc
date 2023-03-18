@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "voicertc",
+  "version": "${version}",
+  "name": "VoiceRTC",
+  "description": "WebRTC Voicechat bridge",
+  "authors": [
+    "BreadLoaf"
+  ],
+  "license": "All Rights Reserved",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "xyz.breadloaf.voicertc.VoiceRTC"
+    ],
+    "voicechat": [
+      "xyz.breadloaf.voicertc.Plugin"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "java": ">=17",
+    "voicechat": "${voicechat_api_dep}"
+  }
+}

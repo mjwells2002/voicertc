@@ -1,0 +1,152 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.maxhenkel.de/repository/public' }
+        mavenLocal()
+    }
+}
+
+plugins {
+    id "fabric-loom" version "1.0-SNAPSHOT"
+    id "com.matthewprenger.cursegradle" version "1.4.0"
+    id "com.github.johnrengelman.shadow" version "7.1.0"
+    id "com.modrinth.minotaur" version "2.+"
+    id 'io.github.juuxel.loom-quiltflower' version '1.6.0'
+}
+
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
+
+archivesBaseName = project.archives_base_name
+version = project.mod_version
+group = project.maven_group
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url = "https://maven.fabricmc.net/" }
+    maven { url = 'https://maven.maxhenkel.de/repository/public' }
+    repositories {
+        maven {
+            name = "Modrinth"
+            url = "https://api.modrinth.com/maven"
+            content {
+                includeGroup "maven.modrinth"
+            }
+        }
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/pipe/sctp4j")
+            credentials {
+                username = file('../github_username.txt').exists() ? file('../github_username.txt').text : ''
+                password = file('../github_token.txt').exists() ? file('../github_token.txt').text : ''
+            }
+        }
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/steely-glint/srtplight")
+            credentials {
+                username = file('../github_username.txt').exists() ? file('../github_username.txt').text : ''
+                password = file('../github_token.txt').exists() ? file('../github_token.txt').text : ''
+            }
+        }
+    }
+}
+
+tasks.withType(AbstractArchiveTask) {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation "maven.modrinth:simple-voice-chat:fabric-${voicechat_mod_version}"
+
+    modRuntimeOnlyMapped (project(path: ":example", configuration: "shadow"))
+
+    implementation "de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}"
+
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+
+    implementation "de.maxhenkel.configbuilder:configbuilder:${configbuilder_version}"
+    shadow("de.maxhenkel.configbuilder:configbuilder:${configbuilder_version}"){
+        transitive(false)
+    }
+
+    implementation "pe.pi:sctp4j:1.0.7-SNAPSHOT"
+    shadow("pe.pi:sctp4j:1.0.7-SNAPSHOT") {
+        transitive(true)
+    }
+
+    implementation 'com.phono:srtplight:1.1.10'
+    shadow('com.phono:srtplight:1.1.10') {
+        transitive(false)
+    }
+
+    implementation 'org.bouncycastle:bctls-jdk15on:1.70'
+    shadow "org.bouncycastle:bctls-jdk15on:1.70"
+
+    implementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
+    shadow "org.bouncycastle:bcpkix-jdk15on:1.70"
+
+    implementation 'org.semver4j:semver4j:3.0.0'
+    shadow('org.semver4j:semver4j:3.0.0'){
+        transitive(false)
+    }
+
+    implementation project(":api")
+    shadow(project(":api")){
+        transitive(false)
+    }
+}
+
+processResources {
+    filesMatching("fabric.mod.json") {
+        expand "version": version,
+                "minecraft_dependency": minecraft_dependency,
+                "minecraft_version": minecraft_version,
+                "loader_version": loader_version,
+                "voicechat_api_dep": voicechat_api_dep
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release = 17
+}
+
+java {
+    withSourcesJar()
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${archivesBaseName}" }
+    }
+}
+
+shadowJar {
+    configurations = [project.configurations.shadow]
+    classifier 'shadow-dev'
+
+    relocate 'de.maxhenkel.configbuilder', "xyz.breadloaf.voicertc.external.de.maxhenkel.configbuilder"
+    relocate 'org.semver4j', "xyz.breadloaf.voicertc.external.org.semver4j"
+    relocate 'org.bouncycastle',  "xyz.breadloaf.voicertc.external.org.bouncycastle"
+    relocate 'pe.pi',  "xyz.breadloaf.voicertc.external.pe.pi"
+    relocate 'io.netty.handler.codec.compression', "xyz.breadloaf.voicertc.external.io.netty.handler.codec.compression"
+    relocate 'biz.source_code', 'xyz.breadloaf.voicertc.external.biz.source_code'
+    relocate 'com.phono', 'xyz.breadloaf.voicertc.external.com.phono'
+    relocate 'org.glassfish', 'xyz.breadloaf.voicertc.external.org.glassfish'
+}
+
+prepareRemapJar {
+    dependsOn shadowJar
+}
+
+remapJar {
+    input = shadowJar.archiveFile.get()
+}

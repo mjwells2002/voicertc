@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "voicertc-example",
+  "version": "${version}",
+  "name": "VoiceRTC Example Mod",
+  "description": "WebRTC Demo",
+  "authors": [
+    "BreadLoaf"
+  ],
+  "license": "All Rights Reserved",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "xyz.breadloaf.voicertc.example.Main"
+    ],
+    "voicertc": [
+      "xyz.breadloaf.voicertc.example.RTCMain"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "java": ">=17",
+    "voicertc": ">=${voicertc_dep}"
+  }
+}
